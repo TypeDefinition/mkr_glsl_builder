@@ -2,7 +2,6 @@
 #include <string>
 #include <fstream>
 #include <sstream>
-#include <iostream>
 #include "glsl_builder.h"
 
 using namespace mkr;
@@ -88,4 +87,14 @@ TEST(ext, case5) {
         error_thrown = true;
     }
     EXPECT_TRUE(error_thrown);
+}
+
+// Ensure that #pragma once works
+TEST(ext, case6) {
+    glsl_builder builder;
+    builder.add("base.frag", file_to_str("case6/base.frag"));
+    builder.add("incl0.frag", file_to_str("case6/incl0.frag"));
+    builder.add("incl1.frag", file_to_str("case6/incl1.frag"));
+    builder.add("incl2.frag", file_to_str("case6/incl2.frag"));
+    EXPECT_TRUE(builder.build() == file_to_str("case6/result.frag"));
 }

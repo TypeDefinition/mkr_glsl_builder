@@ -14,10 +14,22 @@
 namespace mkr {
 class glsl_builder {
  private:
-    std::unordered_map<std::string /* Name */, std::string /* Content */> srcs_; // Use an ordered map for consistent results when unit testing.
+    std::unordered_map<std::string /* Name */, std::string /* Content */> srcs_;
     std::unordered_map<std::string, std::unordered_set<std::string>> in_edges_, out_edges_;
     std::unordered_map<std::string, size_t> in_degrees_, out_degrees_;
     std::stack<std::string> sorted_;
+    std::unordered_map<std::string, bool> pragma_once_;
+
+    static bool has_pragma_once(const std::string &_content) {
+        static const std::regex spec(R"(^[\s]*#pragma[\s]+once[\s\r\n]*)", std::regex::ECMAScript);
+        std::smatch match;
+        return std::regex_search(_content, match, spec);
+    }
+
+    static std::string remove_pragma_once(const std::string &_content) {
+        static const std::regex spec(R"(^[\s]*#pragma[\s]+once[\s\r\n]*)", std::regex::ECMAScript | std::regex ::multiline);
+        return std::regex_replace(_content, spec, "");
+    }
 
     static std::string extract_name(const std::string &_incl) {
         static const std::regex spec(R"(<[a-zA-z0-9_.]+>)", std::regex::ECMAScript);
@@ -26,8 +38,8 @@ class glsl_builder {
         return match.str().substr(1, match.str().length() - 2);
     }
 
-    static std::unordered_set<std::string> find_includes(const std::string& _src) {
-        static const std::regex spec(R"(^[\s]*#include[\s]+<[a-zA-z0-9_.]+>)", std::regex::ECMAScript | std::regex::multiline);
+    static std::unordered_set<std::string> find_includes(const std::string &_src) {
+        static const std::regex spec(R"(^[\s]*#include[\s]+<[a-zA-z0-9_.]+>[\s\r\n]*)", std::regex::ECMAScript | std::regex::multiline);
         std::unordered_set<std::string> out;
         std::smatch match;
         std::string::const_iterator iter(_src.cbegin());
@@ -42,14 +54,24 @@ class glsl_builder {
         return out;
     }
 
+    void find_pragma_once() {
+        pragma_once_.clear();
+
+        for (auto &iter : srcs_) {
+            const auto &name = iter.first;
+            const auto &content = iter.second;
+            pragma_once_[name] = has_pragma_once(content);
+        }
+    }
+
     void find_edges() {
         out_edges_.clear();
         in_edges_.clear();
 
         // Get out-edges.
         for (auto &iter : srcs_) {
-            const auto& name = iter.first;
-            const auto& content = iter.second;
+            const auto &name = iter.first;
+            const auto &content = iter.second;
             out_edges_[name] = find_includes(iter.second);
 
             // Check that the edges are valid.
@@ -63,7 +85,7 @@ class glsl_builder {
 
         // Get in-edges.
         for (auto &iter : out_edges_) {
-            const auto& from = iter.first;
+            const auto &from = iter.first;
             for (const auto &to : iter.second) {
                 in_edges_[to].insert(from);
             }
@@ -130,6 +152,7 @@ class glsl_builder {
     }
 
     std::string build() {
+        find_pragma_once();
         find_edges();
         find_degrees();
         toposort();
@@ -144,23 +167,29 @@ class glsl_builder {
             content = srcs_[name];
             const auto &included = out_edges_[name];
 
-            // Replace the first instance of every unique include with the source contents.
+            // Replace #includes with content.
             for (const std::string &incl : included) {
-                if (visited[incl]) { continue; }
+                // If the content has #pragma once, only include it once.
+                if (pragma_once_[incl] && visited[incl]) {
+                    continue;
+                }
                 visited[incl] = true;
-                std::regex spec(R"(^[\s]*#include[\s]+<)" + incl + ">", std::regex::ECMAScript | std::regex::multiline);
+                std::regex spec(R"(^[\s]*#include[\s]+<)" + incl + R"(>)", std::regex::ECMAScript | std::regex::multiline);
                 content = std::regex_replace(content, spec, modified[incl], std::regex_constants::format_first_only);
             }
 
-            // Replace the rest with an empty string.
+            // Delete the rest of the #include. (Note the [\s\r\n] at the end of the regex.)
             for (const std::string &incl : included) {
-                std::regex spec(R"(^[\s]*#include[\s]+<)" + incl + ">", std::regex::ECMAScript | std::regex::multiline);
+                std::regex spec(R"(^[\s]*#include[\s]+<)" + incl + R"(>[\s\r\n]*)", std::regex::ECMAScript | std::regex::multiline);
                 content = std::regex_replace(content, spec, "");
             }
 
             // Update modified content.
             modified[name] = content;
         }
+
+        // Remove the #pragma once.
+        content = remove_pragma_once(content);
 
         // Return the last modified content. This should contain all the sources combined.
         return content;
