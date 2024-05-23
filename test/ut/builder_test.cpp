@@ -15,7 +15,7 @@ std::string file_to_str(const std::string &_filename) {
 }
 
 // Ensure that each file is only included once.
-TEST(ext, case0) {
+TEST(builder, case0) {
     glsl_builder builder;
     builder.add("base.frag", file_to_str("case0/base.frag"));
     builder.add("incl0.frag", file_to_str("case0/incl0.frag"));
@@ -26,7 +26,7 @@ TEST(ext, case0) {
 }
 
 // Ensure that #includes in comments are ignored.
-TEST(ext, case1) {
+TEST(builder, case1) {
     glsl_builder builder;
     builder.add("base.frag", file_to_str("case1/base.frag"));
     builder.add("incl0.frag", file_to_str("case1/incl0.frag"));
@@ -34,7 +34,7 @@ TEST(ext, case1) {
 }
 
 // Ensure that the number of whitespaces before and between the #include does not matter.
-TEST(ext, case2) {
+TEST(builder, case2) {
     glsl_builder builder;
     builder.add("base.frag", file_to_str("case2/base.frag"));
     builder.add("incl0.frag", file_to_str("case2/incl0.frag"));
@@ -42,13 +42,13 @@ TEST(ext, case2) {
 }
 
 // Ensure that an error is thrown when a missing file is included.
-TEST(ext, case3) {
+TEST(builder, case3) {
     bool error_thrown = false;
     try {
         glsl_builder builder;
         builder.add("base.frag", file_to_str("case3/base.frag"));
         builder.build();
-    } catch (const std::exception& e) {
+    } catch (const std::exception &e) {
         EXPECT_TRUE(e.what() == std::string{"glsl_builder - Cannot include missing source incl0.frag."});
         error_thrown = true;
     }
@@ -56,7 +56,7 @@ TEST(ext, case3) {
 }
 
 // Ensure that an error is thrown when a missing file is included.
-TEST(ext, case4) {
+TEST(builder, case4) {
     bool error_thrown = false;
     try {
         glsl_builder builder;
@@ -65,7 +65,7 @@ TEST(ext, case4) {
         builder.add("incl1.frag", file_to_str("case4/incl1.frag"));
         builder.add("incl2.frag", file_to_str("case4/incl2.frag"));
         builder.build();
-    } catch (const std::exception& e) {
+    } catch (const std::exception &e) {
         EXPECT_TRUE(e.what() == std::string{"glsl_builder - Cyclic dependency detected."});
         error_thrown = true;
     }
@@ -73,7 +73,7 @@ TEST(ext, case4) {
 }
 
 // Ensure that there is only 1 "base" file.
-TEST(ext, case5) {
+TEST(builder, case5) {
     bool error_thrown = false;
     try {
         glsl_builder builder;
@@ -82,7 +82,7 @@ TEST(ext, case5) {
         builder.add("incl0.frag", file_to_str("case5/incl0.frag"));
         builder.add("incl1.frag", file_to_str("case5/incl1.frag"));
         builder.build();
-    } catch (const std::exception& e) {
+    } catch (const std::exception &e) {
         EXPECT_TRUE(e.what() == std::string{"glsl_builder - There must be exactly 1 file which is not included by any other file."});
         error_thrown = true;
     }
@@ -90,7 +90,7 @@ TEST(ext, case5) {
 }
 
 // Ensure that #pragma once works
-TEST(ext, case6) {
+TEST(builder, case6) {
     glsl_builder builder;
     builder.add("base.frag", file_to_str("case6/base.frag"));
     builder.add("incl0.frag", file_to_str("case6/incl0.frag"));
