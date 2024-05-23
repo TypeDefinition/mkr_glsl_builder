@@ -5,3 +5,4 @@ cmake-build-release
 bin/log
 out
 .vs
+test/bin/*.exe

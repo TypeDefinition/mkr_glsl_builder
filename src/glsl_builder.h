@@ -1,3 +1,8 @@
+// Copyright(c) 2024-present, Lim Ngian Xin Terry & mkr_glsl_builder contributors.
+// Distributed under the MIT License (http://opensource.org/licenses/MIT)
+// glsl_builder main header file.
+// See README.md for usage example.
+
 #pragma once
 
 #include <cstdint>
@@ -20,13 +25,13 @@ class glsl_builder {
     std::stack<std::string> sorted_;
     std::unordered_map<std::string, bool> pragma_once_;
 
-    static bool has_pragma_once(const std::string &_content) {
-        static const std::regex spec(R"(^[\s]*#pragma[\s]+once[\s\r\n]*)", std::regex::ECMAScript);
+    static bool has_pragma_macro(const std::string &_content) {
+        static const std::regex spec(R"(^[\s]*#pragma[\s]+once[\s\r\n]*)", std::regex::ECMAScript | std::regex ::multiline);
         std::smatch match;
         return std::regex_search(_content, match, spec);
     }
 
-    static std::string remove_pragma_once(const std::string &_content) {
+    static std::string erase_pragma_macro(const std::string &_content) {
         static const std::regex spec(R"(^[\s]*#pragma[\s]+once[\s\r\n]*)", std::regex::ECMAScript | std::regex ::multiline);
         return std::regex_replace(_content, spec, "");
     }
@@ -38,7 +43,7 @@ class glsl_builder {
         return match.str().substr(1, match.str().length() - 2);
     }
 
-    static std::unordered_set<std::string> find_includes(const std::string &_src) {
+    static std::unordered_set<std::string> extract_includes(const std::string &_src) {
         static const std::regex spec(R"(^[\s]*#include[\s]+<[a-zA-z0-9_.]+>[\s\r\n]*)", std::regex::ECMAScript | std::regex::multiline);
         std::unordered_set<std::string> out;
         std::smatch match;
@@ -54,16 +59,18 @@ class glsl_builder {
         return out;
     }
 
+    // For each source X, find out if X can be included multiple times, or only once.
     void find_pragma_once() {
         pragma_once_.clear();
 
         for (auto &iter : srcs_) {
             const auto &name = iter.first;
             const auto &content = iter.second;
-            pragma_once_[name] = has_pragma_once(content);
+            pragma_once_[name] = has_pragma_macro(content);
         }
     }
 
+    // For each source X, find out which other sources it includes, and which other sources include it.
     void find_edges() {
         out_edges_.clear();
         in_edges_.clear();
@@ -72,7 +79,7 @@ class glsl_builder {
         for (auto &iter : srcs_) {
             const auto &name = iter.first;
             const auto &content = iter.second;
-            out_edges_[name] = find_includes(iter.second);
+            out_edges_[name] = extract_includes(iter.second);
 
             // Check that the edges are valid.
             for (const auto &to : out_edges_[name]) {
@@ -92,6 +99,8 @@ class glsl_builder {
         }
     }
 
+    // For each source X, find the in-degree and out-degree.
+    // That is to say, for source X, how many other sources includes X, and how many other sources this X includes.
     void find_degrees() {
         out_degrees_.clear();
         in_degrees_.clear();
@@ -104,6 +113,7 @@ class glsl_builder {
         }
     }
 
+    // Using toposort, we can ensure that there are no cyclic dependencies, and get the correct order to combine the sources.
     void toposort() {
         // Clear sorted stack.
         sorted_ = std::stack<std::string>{};
@@ -144,6 +154,13 @@ class glsl_builder {
 
     void add(const std::string &_name, const std::string &_source) {
         srcs_.insert({_name, _source});
+    }
+
+    void remove(const std::string &_name) {
+        auto iter = srcs_.find(_name);
+        if (iter != srcs_.end()) {
+            srcs_.erase(iter);
+        }
     }
 
     std::string get(const std::string &_name) const {
@@ -188,8 +205,8 @@ class glsl_builder {
             modified[name] = content;
         }
 
-        // Remove the #pragma once.
-        content = remove_pragma_once(content);
+        // Remove the #pragma once macro.
+        content = erase_pragma_macro(content);
 
         // Return the last modified content. This should contain all the sources combined.
         return content;
