@@ -1,15 +1,15 @@
 ## GLSL Builder
 This single header-only C++ helper class adds support for the #include and #pragma once (similar to that in C++), to GLSL.
 
-Natively, GLSL does not support the "#include" and "#pragma once" macros.
+Natively, GLSL does not support the `#include` and `#pragma once` macros.
 However, as the number of shaders in a project grow, there is a high chance that much of the shader code are similar, leading to DRY being broken as multiple shaders having the same code copy-pasted.
 
-While the ARB_shading_language_include extension exists, it is difficult to setup.
+While the `ARB_shading_language_include` extension exists, it is also troublesome to setup.
 
 This is my attempt to solve that issue in a simple and elegant way.
 
 ## Bug Reporting
-This is my first attempt at making this glsl_builder. If there are any bugs or suggestions, feel free to create a GitHub Issue, or even a Pull Request if you would like to add anything. 😄
+This is my first attempt at making `glsl_builder`. If there are any bugs or suggestions, feel free to create a `GitHub Issue`, or even a `Pull Request` if you would like to add anything. 😄
 
 ## How to Use
 Sample Code:
