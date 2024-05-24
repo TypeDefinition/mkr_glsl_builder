@@ -1,20 +1,20 @@
-## GLSL Builder
-This single header-only C++ helper class adds support for the #include and #pragma once (similar to that in C++), to GLSL.
+## GLSL Include
+This single header-only C++ helper class adds support for the `#include` and `#pragma once` directives (similar to that in C++), to GLSL.
 
-Natively, GLSL does not support the `#include` and `#pragma once` macros.
+Natively, GLSL does not support the `#include` and `#pragma once` directives.
 However, as the number of shaders in a project grow, there is a high chance that much of the shader code are similar, leading to DRY being broken as multiple shaders having the same code copy-pasted.
 
-While the `ARB_shading_language_include` extension exists, it is also troublesome to setup.
+While the `ARB_shading_language_include` extension exists, it is also troublesome to set up.
 
 This is my attempt to solve that issue in a simple and elegant way.
 
 ## Bug Reporting
-This is my first attempt at making `glsl_builder`. If there are any bugs or suggestions, feel free to create a `GitHub Issue`, or even a `Pull Request` if you would like to add anything. 😄
+If there are any bugs or suggestions, feel free to create a `GitHub Issue`, or even a `Pull Request` if you would like to add anything. 😄
 
 ## How to Use
 Sample Code:
 ```
-#include "glsl_builder.h"
+#include "glsl_include.h"
 
 using namespace mkr;
 
@@ -32,14 +32,14 @@ string incl1 = "#pragma once\n"
 
 string incl2 = "void baz() {} // Has no #pragma once, can be included twice.";
 
-glsl_builder builder;
-builder.add("base.frag", base); 
-builder.add("incl0.frag", incl0); // The first argument _name, must match the name between the arrow brackets <>.
-builder.add("incl1.frag", incl1);
-builder.add("incl2.frag", incl2);
+glsl_include include;
+include.add("base.frag", base); 
+include.add("incl0.frag", incl0); // The first argument _name, must match the name between the arrow brackets <>.
+include.add("incl1.frag", incl1);
+include.add("incl2.frag", incl2);
 
-string built = builder.build();
-cout << built << endl;
+string merged = shaders.merge();
+cout << merged << endl;
 ```
 
 Console Output:

@@ -2,7 +2,7 @@
 cmake_minimum_required(VERSION 3.23.2)
 
 # Project Name
-project(mkr_glsl_builder)
+project(mkr_glsl_include)
 
 # CMake Flags
 set(CMAKE_BUILD_TYPE Debug)
