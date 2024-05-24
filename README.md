@@ -18,28 +18,32 @@ Sample Code:
 
 using namespace mkr;
 
-string base = "#include <incl0.frag>\n"
-              "#include <incl1.frag>\n"
-              "void main() {}";
+int main() {
+    string base = "#include <incl0.frag>\n" // Each `#include` MUST be on a new line on its own.
+                  "#include <incl1.frag>\n"
+                  "void main() {}";
 
-string incl0 = "#pragma once\n"
-               "void foo() {}\n"
-               "#include <incl2.frag>";
+    string incl0 = "#pragma once\n" // Each `#pragma once` MUST be on a new line on its own.
+                   "void foo() {}\n"
+                   "#include <incl2.frag>";
 
-string incl1 = "#pragma once\n"
-               "void bar() {}\n"
-               "#include <incl2.frag>";
+    string incl1 = "#pragma once\n"
+                   "void bar() {}\n"
+                   "#include <incl2.frag>";
 
-string incl2 = "void baz() {} // Has no #pragma once, can be included twice.";
+    string incl2 = "void baz() {} // Has no #pragma once, can be included twice.";
 
-glsl_include include;
-include.add("base.frag", base); 
-include.add("incl0.frag", incl0); // The first argument _name, must match the name between the arrow brackets <>.
-include.add("incl1.frag", incl1);
-include.add("incl2.frag", incl2);
+    glsl_include include;
+    include.add("base.frag", base); 
+    include.add("incl0.frag", incl0); // The first argument _name, must match the name between the arrow brackets <>.
+    include.add("incl1.frag", incl1);
+    include.add("incl2.frag", incl2);
 
-string merged = shaders.merge();
-cout << merged << endl;
+    string merged = shaders.merge();
+    cout << merged << endl;
+
+    return 0;
+}
 ```
 
 Console Output:
