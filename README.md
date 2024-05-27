@@ -13,7 +13,7 @@ If there are any bugs or suggestions, feel free to create a `GitHub Issue`, or e
 
 ## How to Use
 Sample Code:
-```
+```C++
 #include "glsl_include.h"
 
 using namespace mkr;
@@ -48,7 +48,7 @@ int main() {
 ```
 
 Console Output:
-```
+```C++
 void foo() {}
 void kee() {}
 void boo() {}
