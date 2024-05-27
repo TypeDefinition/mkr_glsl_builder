@@ -19,29 +19,31 @@
 namespace mkr {
 class glsl_include {
  private:
+    inline static const std::regex include_spec = std::regex(R"(^[\s]*#include[\s]+<[a-zA-z0-9_.]+>[\s\r\n]*)", std::regex::ECMAScript | std::regex::multiline);
+    inline static const std::regex pragma_spec = std::regex(R"(^[\s]*#pragma[\s]+once[\s\r\n]*)", std::regex::ECMAScript | std::regex::multiline);
+    inline static const std::regex name_spec = std::regex(R"(<[a-zA-z0-9_.]+>)", std::regex::ECMAScript);
+
     std::unordered_map<std::string /* Name */, std::string /* Content */> srcs_;
 
-    static std::string erase_header_guard(const std::string &_content) {
-        static const std::regex spec(R"(^[\s]*#pragma[\s]+once[\s\r\n]*)", std::regex::ECMAScript | std::regex::multiline);
-        return std::regex_replace(_content, spec, "");
+    static bool has_pragma_once(const std::string &_content) {
+        std::smatch match;
+        return std::regex_search(_content, match, pragma_spec);
     }
 
-    static std::string extract_name(const std::string &_incl) {
-        static const std::regex spec(R"(<[a-zA-z0-9_.]+>)", std::regex::ECMAScript);
+    static std::string get_name(const std::string &_include) {
         std::smatch match;
-        std::regex_search(_incl, match, spec);
+        std::regex_search(_include, match, name_spec);
         return match.str().substr(1, match.str().length() - 2);
     }
 
-    static std::unordered_set<std::string> extract_includes(const std::string &_src) {
-        static const std::regex spec(R"(^[\s]*#include[\s]+<[a-zA-z0-9_.]+>[\s\r\n]*)", std::regex::ECMAScript | std::regex::multiline);
+    static std::unordered_set<std::string> get_includes(const std::string &_content) {
         std::unordered_set<std::string> out;
         std::smatch match;
-        std::string::const_iterator iter(_src.cbegin());
-        while (iter != _src.end()) {
-            std::regex_search(iter, _src.cend(), match, spec);
+        std::string::const_iterator iter(_content.cbegin());
+        while (iter != _content.end()) {
+            std::regex_search(iter, _content.cend(), match, include_spec);
             if (!match.empty()) {
-                std::string name = extract_name(match.str());
+                std::string name = get_name(match.str());
                 out.insert(name);
             }
             iter = match.suffix().first;
@@ -49,24 +51,12 @@ class glsl_include {
         return out;
     }
 
-    static std::unordered_map<std::string, bool> is_single_include(const std::unordered_map<std::string, std::string> &_srcs) {
-        static const std::regex spec(R"(^[\s]*#pragma[\s]+once[\s\r\n]*)", std::regex::ECMAScript | std::regex::multiline);
-        std::unordered_map<std::string, bool> single_include;
-        for (auto &iter : _srcs) {
-            const auto &name = iter.first;
-            const auto &content = iter.second;
-            std::smatch match;
-            single_include[name] = std::regex_search(content, match, spec);
-        }
-        return single_include;
-    }
-
     static std::unordered_map<std::string, std::unordered_set<std::string>> get_out_edges(const std::unordered_map<std::string, std::string> &_srcs) {
         std::unordered_map<std::string, std::unordered_set<std::string>> out_edges;
         for (auto &iter : _srcs) {
             const auto &name = iter.first;
             const auto &content = iter.second;
-            out_edges[name] = extract_includes(iter.second);
+            out_edges[name] = get_includes(iter.second);
 
             // Check that the edges are valid.
             for (const auto &to : out_edges[name]) {
@@ -103,24 +93,24 @@ class glsl_include {
     std::stack<std::string> toposort(std::unordered_map<std::string, std::unordered_set<std::string>> _out_edges,
                                      std::unordered_map<std::string, size_t> _in_degs) {
         std::stack<std::string> sorted;
-        std::queue<std::string> topoqueue;
+        std::queue<std::string> topo_queue;
         for (const auto &iter : _in_degs) {
             if (iter.second == 0) {
-                topoqueue.push(iter.first);
+                topo_queue.push(iter.first);
             }
         }
 
-        if (topoqueue.size() != 1) {
+        if (topo_queue.size() != 1) {
             throw std::runtime_error("glsl_include - There must be exactly 1 file which is not included by any other file.");
         }
 
-        while (!topoqueue.empty()) {
-            const auto &from = topoqueue.front();
-            topoqueue.pop();
+        while (!topo_queue.empty()) {
+            const auto &from = topo_queue.front();
+            topo_queue.pop();
             sorted.push(from);
             for (const auto &to : _out_edges[from]) {
                 if (--_in_degs[to] == 0) {
-                    topoqueue.push(to);
+                    topo_queue.push(to);
                 }
             }
         }
@@ -165,27 +155,33 @@ class glsl_include {
      * @return The merger of all the sources added.
      */
     std::string merge() {
-        auto single_include = is_single_include(srcs_);
+        std::unordered_map<std::string, bool> include_once;
+        for (auto &iter : srcs_) {
+            const auto &name = iter.first;
+            const auto &content = iter.second;
+            include_once[name] = has_pragma_once(content);
+        }
+
         auto out_edges = get_out_edges(srcs_);
         auto in_edges = get_in_edges(out_edges);
         auto out_degrees = get_degrees(srcs_, out_edges);
         auto in_degrees = get_degrees(srcs_, in_edges);
-        auto sorted_ = toposort(out_edges, in_degrees);
+        auto sorted = toposort(out_edges, in_degrees);
 
         // Replace includes.
         std::unordered_map<std::string, bool> visited;
         std::unordered_map<std::string, std::string> modified;
         std::string content;
-        while (!sorted_.empty()) {
-            const std::string &name = sorted_.top(); // Name of the source we are modifying.
-            sorted_.pop();
+        while (!sorted.empty()) {
+            const std::string &name = sorted.top(); // Name of the source we are modifying.
+            sorted.pop();
             content = srcs_[name];
             const auto &included = out_edges[name];
 
             // Replace #includes with content.
             for (const std::string &incl : included) {
                 // If the content has #pragma once, only include it once.
-                if (single_include[incl] && visited[incl]) {
+                if (include_once[incl] && visited[incl]) {
                     continue;
                 }
                 visited[incl] = true;
@@ -193,7 +189,7 @@ class glsl_include {
                 content = std::regex_replace(content, spec, modified[incl], std::regex_constants::format_first_only);
             }
 
-            // Delete the rest of the #include. (Note the [\s\r\n] at the end of the regex.)
+            // Delete duplicate lines of `#include <XXX>`.
             for (const std::string &incl : included) {
                 std::regex spec(R"(^[\s]*#include[\s]+<)" + incl + R"(>[\s\r\n]*)", std::regex::ECMAScript | std::regex::multiline);
                 content = std::regex_replace(content, spec, "");
@@ -203,8 +199,8 @@ class glsl_include {
             modified[name] = content;
         }
 
-        // Remove the #pragma once macro.
-        content = erase_header_guard(content);
+        // Delete lines of `#pragma once`.
+        content = std::regex_replace(content, pragma_spec, "");
 
         // Return the last modified content. This should contain all the sources combined.
         return content;

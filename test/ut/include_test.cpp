@@ -22,7 +22,11 @@ TEST(include, case0) {
     include.add("incl1.frag", file_to_str("case0/incl1.frag"));
     include.add("incl2.frag", file_to_str("case0/incl2.frag"));
     include.add("incl3.frag", file_to_str("case0/incl3.frag"));
-    EXPECT_TRUE(include.merge() == file_to_str("case0/result.frag"));
+
+    auto x = include.merge();
+    cout << x << endl;
+
+    EXPECT_TRUE(x == file_to_str("case0/result.frag"));
 }
 
 // Ensure that #includes in comments are ignored.

@@ -18,26 +18,27 @@ Sample Code:
 
 using namespace mkr;
 
+// Note that I do not know how to deal with multi-line comments, so avoid putting the directives in one.
 int main() {
-    string base = "#include <incl0.frag>\n" // Each `#include` MUST be on a new line on its own.
-                  "#include <incl1.frag>\n"
+    string main = "#include <foo.frag>\n" // Each `#include` MUST be on a new line on its own.
+                  "#include <boo.frag>\n"
                   "void main() {}";
 
-    string incl0 = "#pragma once\n" // Each `#pragma once` MUST be on a new line on its own.
-                   "void foo() {}\n"
-                   "#include <incl2.frag>";
+    string foo = "#pragma once\n" // Each `#pragma once` MUST be on a new line on its own.
+                 "void foo() {}\n"
+                 "#include <kee.frag>";
 
-    string incl1 = "#pragma once\n"
-                   "void bar() {}\n"
-                   "#include <incl2.frag>";
+    string boo = "#pragma once\n"
+                 "void boo() {}\n"
+                 "#include <kee.frag>";
 
-    string incl2 = "void baz() {} // Has no #pragma once, can be included twice.";
+    string kee = "void kee() {}"; // Has no #pragma once, can be included twice.
 
     glsl_include include;
-    include.add("base.frag", base); 
-    include.add("incl0.frag", incl0); // The first argument _name, must match the name between the arrow brackets <>.
-    include.add("incl1.frag", incl1);
-    include.add("incl2.frag", incl2);
+    include.add("main.frag", main); 
+    include.add("foo.frag", foo); // The first argument must match the name between the arrow brackets <>.
+    include.add("boo.frag", boo);
+    include.add("kee.frag", kee);
 
     string merged = shaders.merge();
     cout << merged << endl;
@@ -49,8 +50,8 @@ int main() {
 Console Output:
 ```
 void foo() {}
-void baz() {} // Has no #pragma once, can be included twice.
-void bar() {}
-void baz() {} // Has no #pragma once, can be included twice.
+void kee() {}
+void boo() {}
+void kee() {}
 void main() {}
 ```
