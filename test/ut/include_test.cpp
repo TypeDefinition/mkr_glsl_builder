@@ -92,13 +92,3 @@ TEST(include, case5) {
     }
     EXPECT_TRUE(error_thrown);
 }
-
-// Ensure that #pragma once works
-TEST(include, case6) {
-    glsl_include include;
-    include.add("base.frag", file_to_str("case6/base.frag"));
-    include.add("incl0.frag", file_to_str("case6/incl0.frag"));
-    include.add("incl1.frag", file_to_str("case6/incl1.frag"));
-    include.add("incl2.frag", file_to_str("case6/incl2.frag"));
-    EXPECT_TRUE(include.merge() == file_to_str("case6/result.frag"));
-}

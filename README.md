@@ -1,7 +1,7 @@
 ## GLSL Include
-This single header-only C++ helper class adds support for the `#include` and `#pragma once` directives (similar to that in C++), to GLSL.
+This single header-only C++ helper class adds support for including files in GLSL.
 
-Natively, GLSL does not support the `#include` and `#pragma once` directives.
+Natively, GLSL does not support the `#include` directive.
 However, as the number of shaders in a project grow, there is a high chance that much of the shader code are similar, leading to DRY being broken as multiple shaders having the same code copy-pasted.
 
 While the `ARB_shading_language_include` extension exists, it is also troublesome to set up.
@@ -18,21 +18,19 @@ Sample Code:
 
 using namespace mkr;
 
-// Note that I do not know how to deal with multi-line comments, so avoid putting the directives in one.
+// Note that I do not know how to deal with multi-line comments, so avoid putting the #include in one.
 int main() {
     string main = "#include <foo.frag>\n" // Each `#include` MUST be on a new line on its own.
                   "#include <boo.frag>\n"
                   "void main() {}";
 
-    string foo = "#pragma once\n" // Each `#pragma once` MUST be on a new line on its own.
-                 "void foo() {}\n"
-                 "#include <kee.frag>";
+    string foo = "#include <kee.frag>\n" 
+                 "void foo() {}";
 
-    string boo = "#pragma once\n"
-                 "void boo() {}\n"
-                 "#include <kee.frag>";
+    string boo = "#include <kee.frag>\n"
+                 "void boo() {}";
 
-    string kee = "void kee() {}"; // Has no #pragma once, can be included twice.
+    string kee = "void kee() {}";
 
     glsl_include include;
     include.add("main.frag", main); 
@@ -49,9 +47,8 @@ int main() {
 
 Console Output:
 ```C++
+void kee() {}
 void foo() {}
-void kee() {}
 void boo() {}
-void kee() {}
 void main() {}
 ```

@@ -1,4 +1,3 @@
-#pragma once
 #include <incl3.frag>
 incl2 line 0;
 incl2 line 1;

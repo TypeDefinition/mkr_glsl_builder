@@ -1,4 +1,3 @@
-#pragma once
 #include <incl1.frag>
 #include <incl2.frag>
 #include <incl3.frag>
