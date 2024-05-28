@@ -98,14 +98,14 @@ class glsl_include {
         }
 
         while (!topo_queue.empty()) {
-            const auto &from = topo_queue.front();
-            topo_queue.pop();
+            const std::string& from = topo_queue.front();
             sorted.push(from);
             for (const auto &to : _out_edges[from]) {
                 if (--_in_degs[to] == 0) {
                     topo_queue.push(to);
                 }
             }
+            topo_queue.pop(); // Pop at the end, because from is a reference.
         }
 
         for (auto &iter : _in_degs) {
@@ -166,9 +166,8 @@ class glsl_include {
         std::unordered_map<std::string, std::string> modified;
         std::string source;
         while (!sorted.empty()) {
-            const std::string &name = sorted.top(); // Name of the source we are modifying.
+            const std::string& name = sorted.top();
             source = srcs_[name];
-            sorted.pop();
 
             const auto &included = out_edges[name];
             for (const std::string &incl : included) {
@@ -186,6 +185,7 @@ class glsl_include {
 
             // Update modified content.
             modified[name] = source;
+            sorted.pop(); // Pop at the end, because name is a reference.
         }
 
         // Return the last modified content. This should contain all the sources combined.
