@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.23.2)
 project(mkr_glsl_include_test)
-set(CMAKE_CXX_STANDARD 20)
-set(CMAKE_CXX_FLAGS "-std=c++20 -g")
+
+set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
 # Set Executable Directory
